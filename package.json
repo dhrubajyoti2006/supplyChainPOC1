@@ -1,0 +1,16 @@
+{
+  "name": "supplychainpoc1",
+  "private": true,
+  "workspaces": [
+    "ui",
+    "api"
+  ],
+  "scripts": {
+    "dev": "concurrently -k \"npm run dev -w ui\" \"npm run start-server -w api\"",
+    "build": "npm run build -w ui",
+    "server": "npm run start-server -w api"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
