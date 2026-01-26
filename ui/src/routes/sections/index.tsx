@@ -1,6 +1,6 @@
 import { Navigate, useRoutes } from "react-router-dom";
-import { CONFIG } from "../../config";
-import { authRoutes } from "./auth";
+import { CONFIG } from "../../config-global";
+// import { authRoutes } from "./auth";
 import { mainRoutes } from "./main";
 
 export function Router() {
@@ -10,8 +10,8 @@ export function Router() {
       element: <Navigate to={CONFIG.auth.redirectPath} replace />
     },
 
-    // Auth
-    ...authRoutes,
+    // // Auth
+    // ...authRoutes,
 
     // Main
     ...mainRoutes,

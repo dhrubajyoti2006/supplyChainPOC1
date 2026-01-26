@@ -3,7 +3,8 @@ import { MainLayout } from "../../layouts/main";
 import { SplashScreen } from "../../components/SplashScreen";
 import GraphPage from "../../pages/graph";
 import GraphDetailPage from "../../pages/graph-detail";
-import HomePage from "../../pages/home";
+import AreaScanManagementPage from "../../pages/area-scan-management";
+import AreaScanInitiatePage from "../../pages/area-scan/initiate";
 import { Outlet } from "react-router-dom";
 
 export const mainRoutes = [
@@ -23,11 +24,15 @@ export const mainRoutes = [
         children: [
           {
             path: "",
-            children: [{ element: <HomePage />, index: true }]
+            children: [{ element: <AreaScanManagementPage />, index: true }]
           },
           {
             path: "home",
-            element: <HomePage />
+            element: <AreaScanManagementPage />
+          },
+          {
+            path: "area-scan/new",
+            element: <AreaScanInitiatePage />
           },
           {
             path: "graph",

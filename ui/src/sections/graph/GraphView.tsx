@@ -1,9 +1,10 @@
-import { Alert, Container, Link, Typography } from "@mui/material";
+import { Alert, Link, Typography } from "@mui/material";
 import { MaterialReactTable, type MRT_ColumnDef } from "material-react-table";
 import { useMemo } from "react";
 import { useEmployees } from "../../hooks/useEmployees";
 import type { Employee } from "../../types/Employee";
 import { Link as RouterLink } from "react-router-dom";
+import { ContentLayout } from "../../layouts/main";
 
 export function GraphView() {
   const { data, error, isLoading } = useEmployees();
@@ -27,10 +28,12 @@ export function GraphView() {
   );
 
   return (
-    <Container sx={{ py: 6 }}>
-      <Typography variant="h4">Graph</Typography>
+    <ContentLayout
+      title="Graph"
+      subtitle="Browse all employees and click a name for details."
+    >
       {error ? (
-        <Alert sx={{ mt: 3 }} severity="error">
+        <Alert sx={{ mb: 3 }} severity="error">
           {error}
         </Alert>
       ) : null}
@@ -41,8 +44,8 @@ export function GraphView() {
         enableDensityToggle={false}
         enableFullScreenToggle={false}
         enableHiding={false}
-        muiTableContainerProps={{ sx: { mt: 3 } }}
+        muiTableContainerProps={{ sx: { mt: 1 } }}
       />
-    </Container>
+    </ContentLayout>
   );
 }
