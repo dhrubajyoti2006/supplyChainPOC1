@@ -5,11 +5,11 @@ export function HomeView() {
   const navigate = useNavigate();
 
   return (
-    <Container sx={{ py: 6 }}>
+    <Container maxWidth={false} disableGutters sx={{ pt: 2, pb: 6 }}>
       <Stack spacing={3} alignItems="flex-start">
         <Typography variant="h4">Home</Typography>
-        <Button variant="contained" onClick={() => navigate("/graph")}>
-          Go to Graph
+        <Button variant="outlined" onClick={() => navigate("/materialflow")}>
+          Material Flow
         </Button>
       </Stack>
     </Container>
