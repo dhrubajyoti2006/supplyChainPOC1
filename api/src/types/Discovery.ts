@@ -34,9 +34,17 @@ export type DiscoveryResult = {
 };
 
 export type DiscoveryPlaceDetails = {
+  placeId?: string;
   name?: string;
   website?: string;
-  email?: string;
   phoneNumber?: string;
+  internationalPhoneNumber?: string;
+  address?: string;
+  rating?: number;
+  userRatingsTotal?: number;
   openingHours?: string[];
+  types?: string[];
+  businessStatus?: string;
+  lat?: number;
+  lng?: number;
 };

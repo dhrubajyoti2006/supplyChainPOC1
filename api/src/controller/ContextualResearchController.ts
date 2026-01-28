@@ -1,6 +1,5 @@
 import { Router, Request, Response } from "express";
 import { ApiResponse } from "../models/ApiResponse";
-import type { ContextualAnalysis } from "../types/ContextualResearch";
 import { ContextualResearchService } from "../services/ContextualResearchService";
 
 export const contextualResearchRouter = Router();

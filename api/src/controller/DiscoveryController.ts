@@ -1,6 +1,6 @@
 import { Router, Request, Response } from "express";
 import { ApiResponse } from "../models/ApiResponse";
-import type { DiscoveryRequest, DiscoveryResult, DiscoveryPlaceDetails } from "../types/Discovery";
+import type { DiscoveryRequest, DiscoveryPlaceDetails } from "../types/Discovery";
 import { DiscoveryService } from "../services/DiscoveryService";
 
 export const discoveryRouter = Router();

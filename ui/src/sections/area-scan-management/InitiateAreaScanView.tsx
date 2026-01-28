@@ -43,6 +43,7 @@ type ApiResponse<T> = {
 
 const categoryOptions = [
   "Restaurants & Dining",
+  "Ingenieur",
   "Plumbing & Maintenance",
   "Retail Stores",
   "Healthcare Providers",

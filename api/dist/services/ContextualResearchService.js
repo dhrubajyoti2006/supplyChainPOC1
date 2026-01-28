@@ -2,33 +2,20 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ContextualResearchService = void 0;
 const ApiResponse_1 = require("../models/ApiResponse");
-const stubModules = [
-    {
-        title: "Market Industry Analysis",
-        stat: "Sector Dynamics",
-        description: "Core market segments prioritize sustainable sourcing and direct-to-consumer delivery models.",
-        detail: "Forecast shows seasonal engagement spikes during Q2/Q4."
-    },
-    {
-        title: "Regional Behavioral Insights",
-        stat: "Geographic Saturation",
-        description: "High concentration within the Austin metro corridor; data indicates a 15% growth trajectory into adjacent suburbs.",
-        detail: "Compliance verified for TX-specific organic standards."
-    },
-    {
-        title: "Competitive Landscape Patterns",
-        stat: "Strategic Pricing Vectors",
-        description: "Operational advantages are in shipping latency compared to national benchmarks.",
-        detail: "Competitor saturation is highest on visual social platforms."
-    }
-];
+const DiscoveryService_1 = require("./DiscoveryService");
+const ContextualResearchAI_1 = require("../AI/contextual/ContextualResearchAI");
 class ContextualResearchService {
-    static async getAnalysis(_placeId) {
-        const analysis = {
-            entityName: "Urban Flora Botanicals LLC",
-            contextAggregation: 85,
-            modules: stubModules
-        };
+    static async getAnalysis(placeId) {
+        let placeDetails;
+        if (placeId) {
+            try {
+                placeDetails = await DiscoveryService_1.DiscoveryService.getPlaceDetails(placeId);
+            }
+            catch (error) {
+                console.warn("Contextual research place lookup failed:", error);
+            }
+        }
+        const analysis = await ContextualResearchAI_1.ContextualResearchAI.generate(placeDetails);
         const response = new ApiResponse_1.ApiResponse(analysis);
         response.addSuccess();
         return response;

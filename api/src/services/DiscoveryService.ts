@@ -24,7 +24,7 @@ const CATEGORY_TYPE_MAP: Record<string, string[]> = {
   "Healthcare Providers": ["hospital", "doctor", "pharmacy"],
   "Real Estate Agencies": ["real_estate_agency"],
   "Logistics & Transportation": ["transit_station", "taxi_stand", "bus_station"],
-  "Professional Services": ["accounting", "lawyer", "financial_advisor"]
+  "Professional Services": ["consultant"]
 };
 
 type StoredScan = {
@@ -150,7 +150,8 @@ export class DiscoveryService {
 
     const params = new URLSearchParams({
       place_id: placeId,
-      fields: "name,website,formatted_phone_number,opening_hours",
+      fields:
+        "place_id,name,formatted_address,international_phone_number,formatted_phone_number,opening_hours,website,rating,user_ratings_total,types,business_status,geometry",
       key: apiKey
     });
 
@@ -163,12 +164,22 @@ export class DiscoveryService {
     }
 
     const result = data.result ?? {};
+    const location = result.geometry?.location;
     const details: DiscoveryPlaceDetails = {
+      placeId: result.place_id,
       name: result.name,
       website: result.website,
-      email: result.email,
       phoneNumber: result.formatted_phone_number,
-      openingHours: result.opening_hours?.weekday_text
+      internationalPhoneNumber: result.international_phone_number,
+      address: result.formatted_address,
+      rating: typeof result.rating === "number" ? result.rating : undefined,
+      userRatingsTotal:
+        typeof result.user_ratings_total === "number" ? result.user_ratings_total : undefined,
+      openingHours: result.opening_hours?.weekday_text,
+      types: Array.isArray(result.types) ? result.types : undefined,
+      businessStatus: result.business_status,
+      lat: typeof location?.lat === "number" ? location.lat : undefined,
+      lng: typeof location?.lng === "number" ? location.lng : undefined
     };
     return details;
   }
