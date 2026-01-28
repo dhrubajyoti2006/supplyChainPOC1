@@ -102,7 +102,7 @@ class DiscoveryService {
         }
         const params = new URLSearchParams({
             place_id: placeId,
-            fields: "name,website,email,formatted_phone_number,opening_hours",
+            fields: "name,website,formatted_phone_number,opening_hours",
             key: apiKey
         });
         const response = await fetch(`${GOOGLE_DETAILS_URL}?${params.toString()}`);
