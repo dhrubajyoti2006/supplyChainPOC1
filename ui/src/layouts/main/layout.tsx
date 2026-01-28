@@ -4,10 +4,12 @@ import {
   Avatar,
   Box,
   Button,
+  IconButton,
   Stack,
   Toolbar,
   Typography
 } from "@mui/material";
+import NotificationsNoneIcon from "@mui/icons-material/NotificationsNone";
 import SettingsIcon from "@mui/icons-material/Settings";
 
 type MainLayoutProps = {
@@ -32,40 +34,58 @@ export function MainLayout({ children }: MainLayoutProps) {
           sx={{
             justifyContent: "space-between",
             gap: 3,
-            minHeight: 38,
+            minHeight: 58,
             px: { xs: 2, sm: 3 }
           }}
         >
           <Stack direction="row" alignItems="center" spacing={1.25}>
             <Box
               sx={{
-                width: 30,
-                height: 30,
+                width: 36,
+                height: 36,
                 borderRadius: 2,
                 background:
                   "linear-gradient(135deg, #2563eb 0%, #1d4ed8 50%, #0f172a 100%)"
               }}
             />
-            <Typography variant="h6" fontWeight={700} letterSpacing={0.5}>
-              Boilerplate
-            </Typography>
+            <Stack spacing={0.25}>
+              <Typography variant="h6" fontWeight={700} letterSpacing={0.5}>
+                BizCraft Site
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                Manage your business assets and automations
+              </Typography>
+            </Stack>
           </Stack>
 
-          <Stack direction="row" spacing={1} alignItems="center">
-            <Button
-              variant="outlined"
-              startIcon={<SettingsIcon />}
-              size="small"
-              sx={{ borderColor: "#e2e8f0", color: "#0f172a" }}
-            >
-              Configure
-            </Button>
-            <Button variant="contained" size="small">
-              + New Project
-            </Button>
-            <Avatar sx={{ bgcolor: "#0ea5e9", width: 36, height: 36 }}>
-              B
-            </Avatar>
+          <Stack direction="row" alignItems="center" spacing={3}>
+            <Stack direction="row" alignItems="center" spacing={2}>
+              <Typography variant="body2" fontWeight={600} sx={{ cursor: "pointer" }}>
+                Dashboard
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Resources
+              </Typography>
+            </Stack>
+            <Stack direction="row" spacing={1} alignItems="center">
+              <IconButton size="small">
+                <NotificationsNoneIcon fontSize="small" />
+              </IconButton>
+              <Button
+                variant="outlined"
+                startIcon={<SettingsIcon />}
+                size="small"
+                sx={{ borderColor: "#e2e8f0", color: "#0f172a" }}
+              >
+                Configure
+              </Button>
+              <Button variant="contained" size="small">
+                + New Project
+              </Button>
+              <Avatar sx={{ bgcolor: "#0ea5e9", width: 36, height: 36 }}>
+                B
+              </Avatar>
+            </Stack>
           </Stack>
         </Toolbar>
       </AppBar>

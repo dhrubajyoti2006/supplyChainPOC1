@@ -8,7 +8,7 @@ const theme = createTheme({
     }
   },
   typography: {
-    fontFamily: `system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`
+    fontFamily: `"SaaS Dashboard", "Space Grotesk", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`
   }
 });
 

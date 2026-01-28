@@ -21,7 +21,7 @@ import {
   Typography
 } from "@mui/material";
 import { Link as RouterLink } from "react-router-dom";
-import { BaseLayout } from "../../layouts/main";
+import { ContentLayout } from "../../layouts/main";
 import { MetricTile } from "./MetricTile";
 
 const metrics = [
@@ -100,34 +100,21 @@ const historicalScans = [
 
 export function AreaScanManagementView() {
   return (
-    <BaseLayout>
-      <Stack spacing={5}>
-        <Stack
-          direction={{ xs: "column", sm: "row" }}
-          alignItems={{ xs: "flex-start", sm: "center" }}
-          justifyContent="space-between"
-          spacing={3}
+    <ContentLayout
+      title="Area Scan Management"
+      subtitle="Monitor and orchestrate automated business discovery processes across global geographic sectors."
+      actions={
+        <Button
+          variant="contained"
+          size="medium"
+          component={RouterLink}
+          to="/area-scan/new"
         >
-          <Box>
-            <Typography variant="h4" fontWeight={700} gutterBottom>
-              Area Scan Management
-            </Typography>
-            <Typography variant="body1" color="text.secondary">
-              Monitor and orchestrate automated business discovery processes across
-              global geographic sectors.
-            </Typography>
-          </Box>
-
-          <Button
-            variant="contained"
-            size="medium"
-            component={RouterLink}
-            to="/area-scan/new"
-          >
-            Initiate New Area Scan
-          </Button>
-        </Stack>
-
+          Initiate New Area Scan
+        </Button>
+      }
+    >
+      <Stack spacing={4}>
         <Stack
           direction={{ xs: "column", sm: "row" }}
           spacing={3}
@@ -285,6 +272,6 @@ export function AreaScanManagementView() {
           </Paper>
         </Stack>
       </Stack>
-    </BaseLayout>
+    </ContentLayout>
   );
 }

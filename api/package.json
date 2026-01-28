@@ -11,6 +11,7 @@
   },
   "scripts": {
     "start-server": "nodemon --exec ts-node src/index.ts",
+    "watch": "tsc -w",
     "lint": "eslint src",
     "lint:fix": "eslint src --fix"
   },

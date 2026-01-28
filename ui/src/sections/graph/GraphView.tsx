@@ -1,4 +1,4 @@
-import { Alert, Link, Typography } from "@mui/material";
+import { Alert, Link } from "@mui/material";
 import { MaterialReactTable, type MRT_ColumnDef } from "material-react-table";
 import { useMemo } from "react";
 import { useEmployees } from "../../hooks/useEmployees";
