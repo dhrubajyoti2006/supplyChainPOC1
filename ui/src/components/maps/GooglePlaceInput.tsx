@@ -6,10 +6,11 @@ import TextField from "@mui/material/TextField";
 import InputAdornment from "@mui/material/InputAdornment";
 import LocationOnOutlinedIcon from "@mui/icons-material/LocationOnOutlined";
 
+import { loadGoogleMaps } from "../../utils/loadGoogleMaps";
+
 declare global {
   interface Window {
     google?: typeof google;
-    __googlePlacesLoader?: Promise<void>;
   }
 }
 
@@ -22,22 +23,6 @@ type Props = {
   apiKey?: string;
   required?: boolean;
 };
-
-async function loadGooglePlaces(apiKey: string) {
-  if (window.google && window.google.maps && window.google.maps.places) return;
-  if (!window.__googlePlacesLoader) {
-    window.__googlePlacesLoader = new Promise<void>((resolve, reject) => {
-      const script = document.createElement("script");
-      script.async = true;
-      script.defer = true;
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}&libraries=places`;
-      script.onload = () => resolve();
-      script.onerror = (e) => reject(e);
-      document.head.appendChild(script);
-    });
-  }
-  await window.__googlePlacesLoader;
-}
 
 export function GooglePlaceInput({
   label = "Location",
@@ -67,7 +52,7 @@ export function GooglePlaceInput({
     let cancelled = false;
     let listener: google.maps.MapsEventListener | null = null;
 
-    loadGooglePlaces(key)
+    loadGoogleMaps(key)
       .then(() => {
         if (cancelled || !inputRef.current) return;
         const { google } = window;

@@ -5,6 +5,7 @@ import { Router } from "express";
 import { contextualResearchRouter } from "./controller/ContextualResearchController";
 import { dataRouter } from "./controller/DataController";
 import { discoveryRouter } from "./controller/DiscoveryController";
+import { aiRouter } from "./controller/AiController";
 
 const app = express();
 dotenv.config();
@@ -17,6 +18,7 @@ const apiRouter = Router();
 apiRouter.use("/data", dataRouter);
 apiRouter.use("/scans", discoveryRouter);
 apiRouter.use("/contextual-research", contextualResearchRouter);
+apiRouter.use("/ai", aiRouter);
 
 app.use("/api", apiRouter);
 

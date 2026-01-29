@@ -24,7 +24,8 @@ const CATEGORY_TYPE_MAP: Record<string, string[]> = {
   "Healthcare Providers": ["hospital", "doctor", "pharmacy"],
   "Real Estate Agencies": ["real_estate_agency"],
   "Logistics & Transportation": ["transit_station", "taxi_stand", "bus_station"],
-  "Professional Services": ["consultant"]
+  "Professional Services": ["consultant"],
+  "Energy Consultants": [""]
 };
 
 type StoredScan = {

@@ -24,7 +24,8 @@ const CATEGORY_TYPE_MAP = {
     "Healthcare Providers": ["hospital", "doctor", "pharmacy"],
     "Real Estate Agencies": ["real_estate_agency"],
     "Logistics & Transportation": ["transit_station", "taxi_stand", "bus_station"],
-    "Professional Services": ["consultant"]
+    "Professional Services": ["consultant"],
+    "Energy Consultants": [""]
 };
 const scanStore = new Map();
 const defaultResults = [

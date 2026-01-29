@@ -13,8 +13,8 @@ import { BarChartOutlined } from "@mui/icons-material";
 import { ContentLayout } from "../../layouts/main";
 import type { ApiResponse } from "../../types/ApiResponse";
 import type { DiscoveryResult } from "../../types/discovery";
-import { useLocation, useParams } from "react-router-dom";
-import type {ContextualAnalysis} from "../../types/contextualResearch.ts";
+import { Link as RouterLink, useLocation, useParams } from "react-router-dom";
+import type { ContextualAnalysis } from "../../types/contextualResearch";
 
 type ContextualState = {
   business?: DiscoveryResult;
@@ -69,17 +69,35 @@ export function ContextualResearchView() {
   const contextAggregation = analysis?.contextAggregation ?? 0;
 
   const modules = analysis?.modules ?? [];
+  const aiPromptPath = `/ai-prompt${effectivePlaceId ? `?placeId=${encodeURIComponent(effectivePlaceId)}` : ""}`;
 
   return (
     <ContentLayout title="Contextual Research Builder" subtitle={`Entity: ${displayedEntity}`}>
       <Stack spacing={4}>
-          <Stack direction="row" alignItems="center" justifyContent="space-between" flexWrap="wrap">
+          <Stack
+            direction={{ xs: "column", md: "row" }}
+            alignItems="center"
+            justifyContent="space-between"
+            flexWrap="wrap"
+            spacing={2}
+          >
             <Typography color="text.secondary">
               Target Entity: {displayedEntity} · Context aggregation: {contextAggregation}%
             </Typography>
-            <Button variant="outlined" size="small">
-              Sync Status: Live Context Stream
-            </Button>
+            <Stack direction="row" spacing={1}>
+              <Button variant="outlined" size="small">
+                Sync Status: Live Context Stream
+              </Button>
+              <Button
+                variant="contained"
+                size="small"
+                component={RouterLink}
+                to={aiPromptPath}
+                disabled={!effectivePlaceId}
+              >
+                Open AI Prompt Builder
+              </Button>
+            </Stack>
           </Stack>
 
           {error && <Alert severity="error">{error}</Alert>}

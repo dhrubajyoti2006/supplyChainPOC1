@@ -1,8 +1,9 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Alert,
   Autocomplete,
+  Box,
   Button,
   Divider,
   FormHelperText,
@@ -13,8 +14,11 @@ import {
 } from "@mui/material";
 import { ContentLayout } from "../../layouts/main";
 import { GooglePlaceInput } from "../../components/maps/GooglePlaceInput";
+import { loadGoogleMaps } from "../../utils/loadGoogleMaps";
 
 const DEFAULT_RADIUS = 5;
+const AREA_SCAN_LOCATION_KEY = "areaScanLocation";
+const DEFAULT_CENTER = { lat: 51.509865, lng: -0.118092 };
 
 type ApiMessage = {
   code: number;
@@ -41,6 +45,18 @@ type ApiResponse<T> = {
   messages: ApiMessage[];
 };
 
+type StoredLocation = {
+  description: string;
+  lat: number;
+  lng: number;
+};
+
+const FALLBACK_MAP_LOCATION: StoredLocation = {
+  description: "Map center",
+  lat: DEFAULT_CENTER.lat,
+  lng: DEFAULT_CENTER.lng
+};
+
 const categoryOptions = [
   "Restaurants & Dining",
   "Ingenieur",
@@ -49,27 +65,67 @@ const categoryOptions = [
   "Healthcare Providers",
   "Real Estate Agencies",
   "Logistics & Transportation",
-  "Professional Services"
+  "Professional Services",
+  "Energy Consultants"
 ];
 
 export function InitiateAreaScanView() {
   const navigate = useNavigate();
+  const storedLocation = useMemo<StoredLocation | null>(() => {
+    if (typeof window === "undefined") {
+      return null;
+    }
+    try {
+      const raw = window.localStorage.getItem(AREA_SCAN_LOCATION_KEY);
+      if (!raw) {
+        return null;
+      }
+      const parsed = JSON.parse(raw);
+      if (
+        parsed &&
+        typeof parsed.description === "string" &&
+        typeof parsed.lat === "number" &&
+        typeof parsed.lng === "number"
+      ) {
+        return parsed;
+      }
+    } catch {
+      // ignore invalid store
+    }
+    return null;
+  }, []);
+
   const [radius, setRadius] = useState(DEFAULT_RADIUS);
-  const [locationInput, setLocationInput] = useState("");
+  const [locationInput, setLocationInput] = useState(storedLocation?.description ?? "");
   const [categories, setCategories] = useState<string[]>([
     "Restaurants & Dining",
     "Retail Stores"
   ]);
-  const [selectedPlace, setSelectedPlace] = useState<{ description: string; lat: number; lng: number } | null>(null);
+  const [selectedPlace, setSelectedPlace] = useState<StoredLocation | null>(
+    storedLocation ?? null
+  );
+  const initialCoords = storedLocation ?? FALLBACK_MAP_LOCATION;
+  const [currentCoords, setCurrentCoords] = useState<StoredLocation>(initialCoords);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
+  const [mapError, setMapError] = useState<string | null>(null);
+  const [geoError, setGeoError] = useState<string | null>(null);
+  const [mapInstance, setMapInstance] = useState<google.maps.Map | null>(null);
+
+  const mapContainerRef = useRef<HTMLDivElement | null>(null);
+  const markerRef = useRef<google.maps.Marker | null>(null);
+  const circleRef = useRef<google.maps.Circle | null>(null);
+
   const googleMapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY ?? "";
+  const mapInitialCenter = storedLocation ?? DEFAULT_CENTER;
 
   const radiusLabel = useMemo(() => `${radius} km`, [radius]);
 
   const handleStartDiscovery = async () => {
     if (!selectedPlace?.lat || !selectedPlace?.lng) {
-      setStartError("Please select a location from the autocomplete suggestions so we capture coordinates.");
+      setStartError(
+        "Please select a location from the autocomplete suggestions or pin a point on the map so we capture coordinates."
+      );
       return;
     }
 
@@ -107,6 +163,162 @@ export function InitiateAreaScanView() {
     }
   };
 
+  const persistLocation = useCallback((payload: StoredLocation) => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    try {
+      window.localStorage.setItem(AREA_SCAN_LOCATION_KEY, JSON.stringify(payload));
+    } catch {
+      // ignore storage errors
+    }
+  }, []);
+
+  const updateLocationSelection = useCallback(
+    (coords: { lat: number; lng: number }, description?: string) => {
+      const payload = {
+        description: description ?? `Pinned location (${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)})`,
+        lat: coords.lat,
+        lng: coords.lng
+      };
+      setLocationInput(payload.description);
+      setSelectedPlace(payload);
+      setCurrentCoords(payload);
+      persistLocation(payload);
+    },
+    [persistLocation]
+  );
+
+  const handleUseCurrentLocation = useCallback(() => {
+    if (!navigator.geolocation) {
+      setGeoError("Geolocation is not available in your browser.");
+      return;
+    }
+    setGeoError(null);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        updateLocationSelection(
+          { lat: position.coords.latitude, lng: position.coords.longitude },
+          "Current device location"
+        );
+      },
+      (error) => {
+        setGeoError(error.message || "Unable to access your current location.");
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+    );
+  }, [updateLocationSelection]);
+
+  useEffect(() => {
+    if (!googleMapsApiKey || !mapContainerRef.current) {
+      if (!googleMapsApiKey) {
+        setMapError("Missing Google Maps API key – map preview cannot load.");
+      }
+      return;
+    }
+
+    let cancelled = false;
+    const initMap = async () => {
+      try {
+        await loadGoogleMaps(googleMapsApiKey);
+        if (cancelled) {
+          return;
+        }
+        if (!window.google?.maps) {
+          throw new Error("Google Maps API failed to initialize.");
+        }
+        const initialCenter = mapInitialCenter;
+        const map = new window.google.maps.Map(mapContainerRef.current!, {
+          center: initialCenter,
+          zoom: 13,
+          streetViewControl: false,
+          mapTypeControl: false
+        });
+        setMapInstance(map);
+        setMapError(null);
+      } catch (error) {
+        if (!cancelled) {
+          setMapError(error instanceof Error ? error.message : "Unable to render map preview.");
+        }
+      }
+    };
+    initMap();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [googleMapsApiKey, mapInitialCenter.lat, mapInitialCenter.lng]);
+
+  useEffect(() => {
+    if (!mapInstance) {
+      return;
+    }
+    const listener = mapInstance.addListener("click", (event) => {
+      if (event.latLng) {
+        updateLocationSelection(
+          { lat: event.latLng.lat(), lng: event.latLng.lng() },
+          "Map pin location"
+        );
+      }
+    });
+    return () => {
+      listener.remove();
+    };
+  }, [mapInstance, updateLocationSelection]);
+
+  useEffect(() => {
+    if (!mapInstance || !currentCoords || !window.google?.maps) {
+      return;
+    }
+    const center = new window.google.maps.LatLng(currentCoords.lat, currentCoords.lng);
+    mapInstance.panTo(center);
+
+    let marker = markerRef.current;
+    if (!marker) {
+      marker = new window.google.maps.Marker({
+        map: mapInstance,
+        position: center,
+        draggable: true
+      });
+      marker.addListener("dragend", (event) => {
+        if (event.latLng) {
+          updateLocationSelection(
+            { lat: event.latLng.lat(), lng: event.latLng.lng() },
+            "Dragged map marker"
+          );
+        }
+      });
+      markerRef.current = marker;
+    } else {
+      marker.setPosition(center);
+    }
+
+    let circle = circleRef.current;
+    if (!circle) {
+      circle = new window.google.maps.Circle({
+        strokeColor: "#1d4ed8",
+        strokeOpacity: 0.65,
+        strokeWeight: 2,
+        fillColor: "#1d4ed8",
+        fillOpacity: 0.15,
+        map: mapInstance,
+        center,
+        radius: radius * 1000
+      });
+      circleRef.current = circle;
+    } else {
+      circle.setCenter(center);
+      circle.setRadius(radius * 1000);
+    }
+  }, [mapInstance, currentCoords, radius, updateLocationSelection]);
+
+  useEffect(() => {
+    if (!selectedPlace) {
+      return;
+    }
+    persistLocation(selectedPlace);
+  }, [selectedPlace, persistLocation]);
+
   return (
     <ContentLayout title="Initiate New Area Scan">
       <Stack spacing={3}>
@@ -120,10 +332,40 @@ export function InitiateAreaScanView() {
               setLocationInput(value);
               setSelectedPlace(null);
             }}
-            onSelect={(place) => setSelectedPlace(place)}
+            onSelect={({ description, lat, lng }) =>
+              updateLocationSelection({ lat, lng }, description)
+            }
             apiKey={googleMapsApiKey}
             placeholder="Enter a specific street address, city, or postal code to center your scan"
           />
+          {mapError && <Alert severity="warning">{mapError}</Alert>}
+          <Stack direction="row" spacing={2} alignItems="center" mt={1}>
+            <Button size="small" variant="outlined" onClick={handleUseCurrentLocation}>
+              Use current location
+            </Button>
+            <Typography variant="caption" color="text.secondary">
+              Tap to share your device position and pin the scan center.
+            </Typography>
+          </Stack>
+          {geoError && (
+            <Alert severity="warning" sx={{ mt: 1 }}>
+              {geoError}
+            </Alert>
+          )}
+          <Box
+            ref={mapContainerRef}
+            sx={{
+              height: 320,
+              borderRadius: 2,
+              border: "1px solid rgba(15, 23, 42, 0.12)",
+              mt: 1,
+              overflow: "hidden"
+            }}
+          />
+          <FormHelperText color="text.secondary">
+            Drag the marker or click anywhere on the map to pin the scan center. The circle reflects the
+            selected radius.
+          </FormHelperText>
         </Stack>
 
         <Stack spacing={1}>
@@ -162,10 +404,7 @@ export function InitiateAreaScanView() {
             value={categories}
             onChange={(_event, newValue) => setCategories(newValue)}
             renderInput={(params) => (
-              <TextField
-                {...params}
-                placeholder="Hold CMD/CTRL to select multiple sectors"
-              />
+              <TextField {...params} placeholder="Hold CMD/CTRL to select multiple sectors" />
             )}
           />
           <FormHelperText color="text.secondary">
