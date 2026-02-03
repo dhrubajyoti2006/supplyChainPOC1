@@ -15,7 +15,10 @@ const GOOGLE_FIELD_MASK = [
   "places.businessStatus",
   "places.websiteUri"
 ].join(",");
-const MAX_RESULT_COUNT = 18;
+const MAX_RESULTS_PER_PAGE = 18;
+const MAX_TOTAL_RESULTS = 50;
+const MAX_PAGES = 4;
+const NEXT_PAGE_DELAY_MS = 2000;
 
 const CATEGORY_TYPE_MAP: Record<string, string[]> = {
   "Restaurants & Dining": ["restaurant", "cafe", "bar"],
@@ -103,6 +106,7 @@ type GoogleSearchResponse = {
   error?: {
     message?: string;
   };
+  nextPageToken?: string;
 };
 
 export class DiscoveryService {
@@ -207,9 +211,9 @@ export class DiscoveryService {
       throw new Error("Location must include valid latitude and longitude coordinates.");
     }
 
-    const payload = {
+    const basePayload = {
       includedTypes: this.resolveTypes(request.categories),
-      maxResultCount: MAX_RESULT_COUNT,
+      maxResultCount: MAX_RESULTS_PER_PAGE,
       locationRestriction: {
         circle: {
           center: {
@@ -222,7 +226,47 @@ export class DiscoveryService {
       rankPreference: "DISTANCE"
     };
 
-    const response = await fetch(GOOGLE_PLACES_URL, {
+    let nextPageToken: string | undefined;
+    let pageCount = 0;
+    const normalizedResults: DiscoveryResult[] = [];
+
+    do {
+      const payload = { ...basePayload, pageToken: nextPageToken };
+      const response = await this.fetchPlacesPage(apiKey, payload);
+
+      const data = (await response.json()) as GoogleSearchResponse;
+      if (!response.ok || data.error) {
+        const message = data.error?.message ?? response.statusText ?? "Unknown Places error";
+        throw new Error(`Google Places error: ${message}`);
+      }
+
+      const places = data.places ?? [];
+      const startIndex = normalizedResults.length;
+      normalizedResults.push(
+        ...places
+          .map((place, index) => this.normalizePlace(place, startIndex + index))
+          .filter((result) => !!result.name)
+      );
+
+      nextPageToken = data.nextPageToken;
+      pageCount += 1;
+
+      if (
+        nextPageToken &&
+        normalizedResults.length < MAX_TOTAL_RESULTS &&
+        pageCount < MAX_PAGES
+      ) {
+        await this.delay(NEXT_PAGE_DELAY_MS);
+      } else {
+        nextPageToken = undefined;
+      }
+    } while (nextPageToken && normalizedResults.length < MAX_TOTAL_RESULTS);
+
+    return normalizedResults.slice(0, MAX_TOTAL_RESULTS);
+  }
+
+  private static fetchPlacesPage(apiKey: string, payload: Record<string, unknown>) {
+    return fetch(GOOGLE_PLACES_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -231,17 +275,10 @@ export class DiscoveryService {
       },
       body: JSON.stringify(payload)
     });
+  }
 
-    const data = (await response.json()) as GoogleSearchResponse;
-    if (!response.ok || data.error) {
-      const message = data.error?.message ?? response.statusText ?? "Unknown Places error";
-      throw new Error(`Google Places error: ${message}`);
-    }
-
-    const places = data.places ?? [];
-    return places
-      .map((place, index) => this.normalizePlace(place, index))
-      .filter((result) => !!result.name);
+  private static delay(ms: number) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   private static normalizePlace(place: GooglePlace, index: number): DiscoveryResult {
