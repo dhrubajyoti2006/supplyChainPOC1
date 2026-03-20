@@ -10,7 +10,7 @@
     "openai": "^4.29.2"
   },
   "scripts": {
-    "start-server": "nodemon --exec ts-node src/index.ts",
+    "start-server": "nodemon --exec ts-node src/index.ts --watch src",
     "watch": "tsc -w",
     "lint": "eslint src",
     "lint:fix": "eslint src --fix"

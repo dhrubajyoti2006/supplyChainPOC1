@@ -1,9 +1,11 @@
 import OpenAI from "openai";
 import type { DiscoveryPlaceDetails } from "../../types/Discovery";
-import type { ContextualAnalysis, ContextualModule } from "../../types/ContextualResearch";
+import type { ContextualAnalysis } from "../../types/ContextualResearch";
 
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-const openAiClient = OPENAI_API_KEY ? new OpenAI({ apiKey: OPENAI_API_KEY }) : null;
+const getClient = () => {
+  const apiKey = process.env.OPENAI_API_KEY;
+  return apiKey ? new OpenAI({ apiKey }) : null;
+};
 
 type AiModulePayload = Partial<{
   title: string;
@@ -18,21 +20,21 @@ type AiModulePayload = Partial<{
 
 export class ContextualResearchAI {
   public static async generate(placeDetails?: DiscoveryPlaceDetails): Promise<ContextualAnalysis> {
-    const fallback = this.buildFallbackAnalysis(placeDetails);
+    const openAiClient = getClient();
     if (!openAiClient) {
-      return fallback;
+      throw new Error("OpenAI client is not configured.");
     }
 
     try {
       const response = await openAiClient.chat.completions.create({
         model: "gpt-4o-mini",
         temperature: 0.35,
-        max_tokens: 600,
+        max_tokens: 900,
         messages: [
           {
             role: "system",
             content:
-              "You are a contextual research analyst for a B2B automation platform. The answer must be a single JSON object that matches the schema { entityName, contextAggregation, modules } where modules is an array of exactly three objects containing title, stat, description and detail. Do not include any prose outside of the JSON."
+              "You are a contextual research analyst for a B2B automation platform. The answer must be a single JSON object that matches the schema { entityName, contextAggregation, modules } where modules is an array of exactly three objects containing title, stat, description and detail. Each module description should be 5-7 sentences and each detail should be 3-4 sentences so the total output is at least 10 lines. Do not include any prose outside of the JSON."
           },
           {
             role: "user",
@@ -51,8 +53,7 @@ export class ContextualResearchAI {
     } catch (error) {
       console.warn("ContextualResearchAI failed:", error instanceof Error ? error.message : error);
     }
-
-    return fallback;
+    throw new Error("Unable to generate contextual analysis.");
   }
 
   private static buildPrompt(placeDetails?: DiscoveryPlaceDetails): string {
@@ -119,56 +120,6 @@ export class ContextualResearchAI {
     } catch {
       return null;
     }
-  }
-
-  private static buildFallbackAnalysis(placeDetails?: DiscoveryPlaceDetails): ContextualAnalysis {
-    const modules = this.buildFallbackModules(placeDetails);
-    return {
-      entityName: placeDetails?.name ?? "Unknown Entity",
-      contextAggregation: this.deriveAggregation(placeDetails),
-      modules
-    };
-  }
-
-  private static buildFallbackModules(placeDetails?: DiscoveryPlaceDetails): ContextualModule[] {
-    const locationHint = placeDetails?.address ? `near ${placeDetails.address}` : "in the current region";
-    const typeHint = placeDetails?.types?.slice(0, 2).join(", ") ?? "multiple local segments";
-    const ratingHint =
-      typeof placeDetails?.rating === "number"
-        ? `Rated ${placeDetails.rating.toFixed(1)}/5`
-        : "Rating is not yet public";
-    const detailHint = placeDetails?.openingHours?.length
-      ? `Sample hours: ${placeDetails.openingHours.slice(0, 2).join(", ")}`
-      : "Opening hours are not published.";
-
-    return [
-      {
-        title: "Market Industry Analysis",
-        stat: "Sector Dynamics",
-        description: `Operators around ${typeHint} ${locationHint} are easing into automation.`,
-        detail: `${ratingHint}. ${detailHint}`
-      },
-      {
-        title: "Regional Behavioral Insights",
-        stat: "Geographic Saturation",
-        description: `Consumer behavior is shaped by the local density of ${typeHint}.`,
-        detail: "Focus on responsive fulfillment for the adjacent micro-regions."
-      },
-      {
-        title: "Competitive Landscape Patterns",
-        stat: "Operational Readiness",
-        description: "Automation maturity is inferred from digital visibility and service coverage.",
-        detail: `Website: ${placeDetails?.website ?? "not shared"}. ${ratingHint} across reviews.`
-      }
-    ];
-  }
-
-  private static deriveAggregation(placeDetails?: DiscoveryPlaceDetails): number {
-    const rating = typeof placeDetails?.rating === "number" ? placeDetails.rating : undefined;
-    if (typeof rating === "number") {
-      return Math.min(95, Math.max(45, Math.round((rating / 5) * 50 + 40)));
-    }
-    return 75;
   }
 
   private static clampAggregation(value: unknown): number {

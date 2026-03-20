@@ -1,32 +1,9 @@
-import { Alert, Box, Button, Divider, Paper, Stack, Typography } from "@mui/material";
+import { Alert, Box, Button, Divider, Paper, Stack, TextField, Typography } from "@mui/material";
 import { ContentLayout } from "../../layouts/main";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import type { ApiResponse } from "../../types/ApiResponse";
 import type { PromptGenerationResult } from "../../types/prompt";
-
-const promptLines = [
-  "# PROJECT_ID: AUSTIN_METRO_001",
-  "# STATUS: DRAFT_REVIEW",
-  "[SECTION: BRAND VOICE & TONE]",
-  "- Professional yet approachable; maintain a high-energy \"Modern Texan\" persona.",
-  "- Focus on authenticity and community growth.",
-  "- Avoid hyperbole; use precise, action-oriented verbs.",
-  "- Tone: Welcoming, Authoritative, Innovative.",
-  "[SECTION: CORE DEMOGRAPHIC]",
-  "- Primary: Entrepreneurs and micro-business owners (78701, 78702, 78704).",
-  "- Secondary: Remote professionals and civic-minded residents.",
-  "- Psychographics: Values local sustainability, tech-forward solutions.",
-  "- Age Bracket: 24-55 years.",
-  "[SECTION: DESIGN OBJECTIVES]",
-  "- Visual Hierarchy: Emphasis on \"Core Services\" through high-contrast spacing.",
-  "- Color Palette: Utility-first, leveraging #BF5700 as action trigger.",
-  "- Layout: Clean grid structures for business directories, fluid masonry.",
-  "- Accessibility: Ensure WCAG 2.1 AA compliance for generated elements.",
-  "[SECTION: FUNCTIONAL CONSTRAINTS]",
-  "- Data Ingestion: Filter for metadata tags (LOCAL, BOUTIQUE, HIGH_TRAFFIC).",
-  "- Delivery Format: Provide Markdown + JSON schema + optimized assets."
-];
 
 export function PromptEditorView() {
   const [searchParams] = useSearchParams();
@@ -34,6 +11,12 @@ export function PromptEditorView() {
   const [promptResult, setPromptResult] = useState<PromptGenerationResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [analysisInput, setAnalysisInput] = useState(
+    "Analyze the business opportunity for a local services marketplace in Austin, TX."
+  );
+  const [analysisOutput, setAnalysisOutput] = useState<string | null>(null);
+  const [analysisLoading, setAnalysisLoading] = useState(false);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -68,8 +51,34 @@ export function PromptEditorView() {
     return () => controller.abort();
   }, [placeId]);
 
-  const displayPrompt = promptResult?.prompt ?? promptLines.map((line) => `${line}\n`).join("");
+  const displayPrompt = promptResult?.prompt ?? "";
   const summary = promptResult?.summary ?? "Prompt summary will appear here once available.";
+
+  const handleRunAnalysis = async () => {
+    setAnalysisLoading(true);
+    setAnalysisError(null);
+    setAnalysisOutput(null);
+    try {
+      const response = await fetch("/api/analysis", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ input: analysisInput })
+      });
+      const payload = (await response.json()) as ApiResponse<{ output: string; model: string }>;
+      const hasSuccess = payload.messages?.some((message) => message.code === 1);
+      if (!response.ok || !hasSuccess) {
+        throw new Error(payload.messages?.[0]?.text || "Unable to run analysis.");
+      }
+      setAnalysisOutput(payload.data?.output ?? "");
+    } catch (err) {
+      console.error("Failed to run analysis", err);
+      setAnalysisError(err instanceof Error ? err.message : "Unable to run analysis.");
+    } finally {
+      setAnalysisLoading(false);
+    }
+  };
 
   return (
     <ContentLayout title="AI Generation Prompt Editor">
@@ -104,9 +113,15 @@ export function PromptEditorView() {
                 {error}
               </Alert>
             )}
-            <Box component="pre" sx={{ whiteSpace: "pre-wrap", fontSize: "0.9rem", mt: 2 }}>
-              {displayPrompt}
-            </Box>
+            {displayPrompt ? (
+              <Box component="pre" sx={{ whiteSpace: "pre-wrap", fontSize: "0.9rem", mt: 2 }}>
+                {displayPrompt}
+              </Box>
+            ) : (
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+                No AI prompt generated yet.
+              </Typography>
+            )}
           </Paper>
           <Paper
             elevation={0}
@@ -143,6 +158,56 @@ export function PromptEditorView() {
           <Button variant="outlined">Discard Changes</Button>
           <Button variant="contained">Approve for Generation</Button>
         </Stack>
+
+        <Paper
+          elevation={0}
+          sx={{
+            borderRadius: 3,
+            border: "1px solid rgba(15, 23, 42, 0.08)",
+            bgcolor: "#ffffff",
+            px: { xs: 3, md: 4 },
+            py: { xs: 3, md: 4 }
+          }}
+        >
+          <Stack spacing={2}>
+            <Typography variant="h6" fontWeight={600}>
+              AI Analysis
+            </Typography>
+            <TextField
+              label="Analysis Input"
+              multiline
+              minRows={4}
+              value={analysisInput}
+              onChange={(event) => setAnalysisInput(event.target.value)}
+              placeholder="Describe what you want the AI to analyze."
+              fullWidth
+            />
+            <Stack direction="row" spacing={2} alignItems="center">
+              <Button
+                variant="contained"
+                onClick={handleRunAnalysis}
+                disabled={analysisLoading || !analysisInput.trim()}
+              >
+                {analysisLoading ? "Analyzing..." : "Run Analysis"}
+              </Button>
+              {analysisError && <Alert severity="error">{analysisError}</Alert>}
+            </Stack>
+            {analysisOutput && (
+              <Box
+                sx={{
+                  borderRadius: 2,
+                  bgcolor: "rgba(15, 23, 42, 0.04)",
+                  px: 2.5,
+                  py: 2,
+                  whiteSpace: "pre-wrap",
+                  fontSize: "0.95rem"
+                }}
+              >
+                {analysisOutput}
+              </Box>
+            )}
+          </Stack>
+        </Paper>
       </Stack>
     </ContentLayout>
   );
